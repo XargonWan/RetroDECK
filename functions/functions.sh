@@ -501,7 +501,7 @@ finit() {
   (
   prepare_component "reset" "all"
   build_retrodeck_current_presets
-  deploy_helper_files
+  deploy_helper_files $helper_files_list
 
   # Optional actions based on user choices
   if [[ "$finit_options_choices" =~ (rpcs3_firmware|Enable All) ]]; then
@@ -583,16 +583,52 @@ update_splashscreens() {
 
 deploy_helper_files() {
   # This script will distribute helper documentation files throughout the filesystem according to the $helper_files_list
-  # USAGE: deploy_helper_files
+  # USAGE: deploy_helper_files <helper_files_list>
 
-  while IFS='^' read -r file dest
-  do
-      if [[ ! "$file" == "#"* ]] && [[ ! -z "$file" ]]; then
-      eval current_dest="$dest"
-      cp -f "$helper_files_folder/$file" "$current_dest/$file"
-    fi
+  local helper_files_list=$1
+  local article_url
+  local helper_file_destination
+  local wiki_repo="https://github.com/XargonWan/RetroDECK-Wiki"
+  local wiki_local_clone="/tmp/wiki"
 
-  done < "$helper_files_list"
+  # Check if the file exists
+  if [ ! -f "$helper_files_list" ]; then
+    echo "Error: File not found: $helper_files_list"
+    return 1
+  fi
+
+  # Read parameters from the file, ignoring lines starting with '#', and skipping empty lines
+  IFS='^' read -r article_url helper_file_destination _ < <(awk -F'#' '/./ && !/^#/ {gsub(/\/$/, "", $1); print $1}' "$helper_files_list")
+
+  # Substitute variables in helper_file_destination
+  helper_file_destination=$(eval echo "$helper_file_destination")
+  echo -e "Found link: $article_url\nDestination: $helper_file_destination"
+
+  # Check if the repository is already cloned
+  if [ ! -d "$wiki_local_clone" ]; then
+    # Clone the repository
+    git clone "$wiki_repo" "$wiki_local_clone" --depth 1
+  fi
+
+  # Change to the destination path and pull the latest changes
+  cd "$wiki_local_clone"
+  git pull origin main
+  cd -
+
+  # Check if article_url is not empty before copying
+  if [ -n "$article_url" ]; then
+    # Adjust the destination path based on the cloned directory structure
+    local adjusted_helper_file_destination="$wiki_local_clone/wiki-rtd/docs/${article_url#https://retrodeck.readthedocs.io/en/latest/}.md"
+
+    # Copy the article_url file to the adjusted destination path
+    mkdir -p "$helper_file_destination"
+    cp -fv "$adjusted_helper_file_destination" "$helper_file_destination/$(basename $adjusted_helper_file_destination)"
+    
+    # Append the footer
+    echo -e "\n\n----------\n\nRelated wiki article can be found here:\n$article_url\n\nThe RetroDECK Team" >> "$helper_file_destination/$(basename $adjusted_helper_file_destination)"
+  else
+    echo "Error: Empty article_url. Please check the format of the file specified by $helper_files_list."
+  fi
 }
 
 easter_eggs() {
