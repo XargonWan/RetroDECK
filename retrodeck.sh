@@ -56,10 +56,10 @@ https://retrodeck.net
       ;;
     --reset-component*)
       echo "You are about to reset one or more RetroDECK components or emulators."
-      echo "Available options are: es-de, retroarch, cemu, dolphin, duckstation, gzdoom, melonds, pcsx3, pico8, ppsspp, primehack, rpcs3, ryujinx, xemu, vita3k, mame, boilr, all"
+      echo "Available options are: es-de, retroarch, cemu, dolphin, duckstation, gzdoom, melonds, pcsx3, pico8, ppsspp, primehack, rpcs3, ryujinx, steam_rom_manager, xemu, vita3k, mame, all"
       read -p "Please enter the component you would like to reset: " component
       component=$(echo "$component" | tr '[:upper:]' '[:lower:]')
-      if [[ "$component" =~ ^(es-de|retroarch|cemu|dolphin|duckstation|gzdoom|mame|melonds|pcsx2|ppsspp|primehack|ryujinx|rpcs3|xemu|all)$ ]]; then
+      if [[ "$component" =~ ^(es-de|retroarch|cemu|dolphin|duckstation|gzdoom|mame|melonds|pcsx2|ppsspp|primehack|ryujinx|steam_rom_manager|rpcs3|xemu|all)$ ]]; then
         read -p "You are about to reset $component to default settings. Enter 'y' to continue, 'n' to stop: " response
         if [[ $response == [yY] ]]; then
           prepare_component "reset" "$component" "cli"
@@ -185,12 +185,19 @@ fi
 
 # Normal Startup
 
-if [[ $steam_sync == "true" ]]; then
-  python3 /app/libexec/steam-sync/steam-sync.py &
-fi
-
 start_retrodeck
 
 if [[ $steam_sync == "true" ]]; then
-  touch /tmp/retrodeck_steam_sync_exit
+  (
+  python3 /app/libexec/steam-sync/steam-sync.py
+  ) |
+  zenity --progress \
+    --title="Syncing with Steam" \
+    --window-icon="/app/share/icons/hicolor/scalable/apps/net.retrodeck.retrodeck.svg" \
+    --text="Syncing favorite games with Steam, please wait." \
+    --percentage=25 \
+    --pulsate \
+    --auto-close \
+    --auto-kill
+
 fi
