@@ -763,6 +763,32 @@ prepare_component() {
     fi
   fi
 
+  if [[ "$component" =~ ^(ruffle|all)$ ]]; then
+  component_found="true"
+    if [[ "$action" == "reset" ]]; then # Run reset-only commands
+      log i "----------------------"
+      log i "Preparing Ruffle"
+      log i "----------------------"
+      if [[ $multi_user_mode == "true" ]]; then # Multi-user actions
+        log d "Figure out what Ruffle needs for multi-user"
+      else # Single-user actions
+        # NOTE: TODO
+        rm -rf "/var/data/ruffle"
+        create_dir "/var/data/ruffle"
+        cp -fvr "$emuconfigs/ruffle/"prefernces.toml "/var/data/ruffle" # component config
+        # No bios for ruffle or other settings. Showed for documentation purposes
+        set_setting_value "$ruffleconf" "pref-path" "ruffle"
+      fi
+      # Shared actions
+      dir_prep "$saves_folder/ruffle" # Multi-user safe?
+    fi
+    if [[ "$action" == "postmove" ]]; then # Run only post-move commands
+      dir_prep "$saves_folder/ruffle" # Multi-user safe?
+      # No bios for ruffle or other settings. Showed for documentation purposes
+      set_setting_value "$ruffleconf" "pref-path" "ruffle"
+    fi
+  fi
+
   if [[ "$component" =~ ^(mame|all)$ ]]; then
   component_found="true"
     # TODO: do a proper script
