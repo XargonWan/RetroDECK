@@ -857,7 +857,16 @@ prepare_component() {
     sed -i 's#RETRODECKSAVESDIR#'$saves_folder'#g' "/var/config/gzdoom/gzdoom.ini" # This is an unfortunate one-off because set_setting_value does not currently support JSON
   fi
 
-  if [[ $component_found == "false" ]]; then
+  if [[ "$component" =~ ^(steam_rom_manager|all)$ ]]; then
+  component_found="true"
+    log i "----------------------"
+    log i "Prepearing STEAM ROM MANAGER"
+    log i "----------------------"
+    
+    python3 /app/libexec/steam-sync/resetsync.py
+  fi
+
+  if [[ ! "$component" =~ ^(retrodeck|es-de|retroarch|citra|citra-emu|cemu|dolphin|dolphin-emu|duckstation|melonds|melonDS|pcsx2|pico8|pico-8|ppsspp|primehack|rpcs3|ryujinx|yuzu|xemu|vita3k|mame|gzdoom|steam_rom_manager|)$ ]]; then
     log e "Supplied component $component not found, not resetting"
   fi
 

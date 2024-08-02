@@ -1152,12 +1152,13 @@ configurator_reset_dialog() {
     --window-icon="/app/share/icons/hicolor/scalable/apps/net.retrodeck.retrodeck.svg" --width=1200 --height=720 \
     --text="Which component do you want to reset to default settings?" \
     --column="Component" --column="Action" \
+    "Steam Rom Manager" "Reset SRM that manages the sync and scraping toward Steam library" \
     "ES-DE" "Reset the ES-DE frontend" \ )
     # TODO: "GyroDSU" "Reset the gyroscope manager GyroDSU"
 
     case $component_to_reset in
 
-    "ES-DE" ) # TODO: GyroDSU
+    "Steam Rom Manager" | "ES-DE" ) # TODO: GyroDSU
       if [[ $(configurator_reset_confirmation_dialog "$component_to_reset" "Are you sure you want to reset $component_to_reset to default settings?\n\nThis process cannot be undone.") == "true" ]]; then
         prepare_component "reset" "$component_to_reset" "configurator"
         configurator_process_complete_dialog "resetting $component_to_reset"
@@ -1248,6 +1249,48 @@ configurator_about_retrodeck_dialog() {
   ;;
 
   esac
+}
+
+configurator_add_steam() {
+  if [[ $(get_setting_value $rd_conf "steam_sync" retrodeck "options") == "true" ]]; then
+    zenity --question \
+    --no-wrap --window-icon="/app/share/icons/hicolor/scalable/apps/net.retrodeck.retrodeck.svg" \
+    --title "RetroDECK Configurator - RetroDECK Steam Syncronization" \
+    --text="Steam syncronization is currently enabled. Do you want to disable it?\n\nThe already added shortcut will not be removed.\n"
+
+    if [ $? == 0 ] # User clicked "Yes"
+    then
+      disable_steam_sync
+    else # User clicked "Cancel"
+      configurator_welcome_dialog
+    fi
+  else
+    zenity --question \
+    --no-wrap --window-icon="/app/share/icons/hicolor/scalable/apps/net.retrodeck.retrodeck.svg" \
+    --title "RetroDECK Configurator - RetroDECK Steam Syncronization" \
+    --text="Steam syncronization is currently disabled. Do you want to enable it?\n\nAll the games marked as favorites will be syncronized with Steam Rom Manager.\nRemember to restart Steam each time to see the changes.\n"
+
+    if [ $? == 0 ]
+    then
+      enable_steam_sync
+    else
+      configurator_welcome_dialog
+    fi
+  fi
+}
+
+enable_steam_sync() {
+  set_setting_value $rd_conf "steam_sync" "true" retrodeck "options"
+  zenity --icon-name=net.retrodeck.retrodeck --info --no-wrap --ok-label="OK" \
+      --window-icon="/app/share/icons/hicolor/scalable/apps/net.retrodeck.retrodeck.svg" \
+      --title "RetroDECK Configurator - RetroDECK Steam Syncronization" \
+      --text="Steam syncronization enabled."
+  configurator_welcome_dialog
+}
+
+disable_steam_sync() {
+  set_setting_value $rd_conf "steam_sync" "false" retrodeck "options"
+  configurator_welcome_dialog
 }
 
 configurator_version_history_dialog() {
